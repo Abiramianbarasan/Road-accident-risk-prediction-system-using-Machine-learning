@@ -1,0 +1,10 @@
+Timestamp,Age of Driver,Vehicle Type,Age of Vehicle,Engine Capacity (CC),Day of Week,Weather,Light Conditions,Road Surface,Gender,Speed Limit,Latitude,Longitude,Predicted Severity
+2025-05-25 19:06:05,38,Bus or coach (17 or more pass seats),11,5660.0,Thursday,Snowing no high winds,Dark - no lighting,Wet,Male,70,11.0168445,76.9558321,Fatal
+2025-05-25 19:09:19,27,Taxi/Private hire car,5,1120,Sunday,Raining no high winds,Dark - lights lit,Wet,Male,50,11.0168445,76.9558321,Serious
+2025-05-25 19:10:57,32,Motorcycle 125cc and under,3,120,Monday,Fine + high winds,Daylight,Dry,Female,50,11.0168445,76.9558321,Slight
+2025-05-25 19:11:55,32,Minibus (8 - 16 passenger seats),3,2500,Friday,Snowing no high winds,Dark - no lighting,Snow,Male,80,11.0168445,76.9558321,Fatal
+2025-05-29 04:53:29,34,Motorcycle 125cc and under,3,125,Monday,Fine no high winds,Daylight,Dry,Male,30,11.0168445,76.9558321,Slight
+2025-05-29 05:00:32,34,Car,10,1794,Sunday,Raining + high winds,Daylight,Wet,Male,60,11.0168445,76.9558321,Serious
+2025-05-29 05:01:24,34,Motorcycle over 500cc,10,500,Sunday,Fine no high winds,Daylight,Dry,Male,30,11.0168445,76.9558321,Slight
+2025-05-29 05:05:45,25,Motorcycle over 125cc and up to 500cc,2,130,Sunday,Raining no high winds,Daylight,Wet,Male,60,11.0168445,76.9558321,Serious
+2025-05-29 05:16:35,34,Motorcycle 50cc and under,2,55,Sunday,Fine no high winds,Daylight,Dry,Female,60,11.0168445,76.9558321,Slight

@@ -1,4 +1,4 @@
-# Road Accident Severity Prediction and Classification System
+# Road Accident risk Prediction system using Machine Learning
 
 ## 1. Project Overview
 This project aims to predict and classify road accident severity using machine learning techniques. The system helps in early assessment of accident severity, enabling faster response and better resource allocation for emergency services.

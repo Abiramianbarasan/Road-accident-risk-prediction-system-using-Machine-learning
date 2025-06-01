@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accident Statistics Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Add Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Add Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Add Leaflet.heat plugin -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet.heat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Accident Statistics</h1>
+            <a href="/" class="back-link">← Back to Predictor</a>
+        </div>
+
+        <div class="chart-container">
+            <h3>Accident Heatmap</h3>
+            <div id="map"></div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Accidents</h3>
+                <canvas id="severityChart"></canvas>
+            </div>
+            <div class="stat-card">
+                <h3>Accidents by Time of Day</h3>
+                <canvas id="timeChart"></canvas>
+            </div>
+            <div class="stat-card">
+                <h3>Accidents by Weather</h3>
+                <canvas id="weatherChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>Accident Severity Distribution</h3>
+            <canvas id="distributionChart"></canvas>
+        </div>
+
+        <button id="getLocationBtn" class="btn btn-primary">Get Current Location</button>
+        <button id="sendSmsBtn" class="btn btn-success" disabled>Send SMS</button>
+        <div id="locationInfo"></div>
+    </div>
+
+    <script>
+        // Initialize Leaflet map
+        function initMap() {
+            console.log("Initializing map...");
+            // Create the map centered on India
+            const map = L.map('map').setView([20.5937, 78.9629], 5);
+
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Fetch heatmap data from backend
+            fetch('/heatmap-data')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Received heatmap data:", data);
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    if (data.length === 0) {
+                        document.getElementById('map').innerHTML = '<div style="text-align: center; padding: 20px;">No data available for visualization</div>';
+                        return;
+                    }
+
+                    // Convert data to heatmap format
+                    const heatmapData = data.map(point => [
+                        point.location.lat,
+                        point.location.lng,
+                        point.weight
+                    ]);
+
+                    // Create heatmap layer
+                    const heat = L.heatLayer(heatmapData, {
+                        radius: 25,
+                        blur: 15,
+                        maxZoom: 10,
+                        max: 1.0,
+                        gradient: {
+                            0.4: 'blue',
+                            0.6: 'lime',
+                            0.8: 'yellow',
+                            1.0: 'red'
+                        }
+                    }).addTo(map);
+
+                    // Fit map bounds to data
+                    const bounds = L.latLngBounds(heatmapData.map(point => [point[0], point[1]]));
+                    map.fitBounds(bounds);
+                })
+                .catch(error => {
+                    console.error('Error loading heatmap data:', error);
+                    document.getElementById('map').innerHTML = `<div style="text-align: center; padding: 20px; color: red;">Error loading data: ${error.message}</div>`;
+                });
+        }
+
+        // Initialize the map when the page loads
+        window.onload = function() {
+            console.log("Window loaded, initializing map...");
+            initMap();
+        };
+
+        // Sample data for charts
+        const severityData = {
+            labels: ['Fatal', 'Serious', 'Slight'],
+            datasets: [{
+                data: [1980, 6097, 15855],
+                backgroundColor: ['#ff5252', '#ffa726', '#66bb6a']
+            }]
+        };
+
+        const timeData = {
+            labels: ['Morning', 'Afternoon', 'Evening', 'Night'],
+            datasets: [{
+                label: 'Number of Accidents',
+                data: [4500, 6000, 5500, 4000],
+                backgroundColor: '#3498db'
+            }]
+        };
+
+        const weatherChartData = {
+            labels: ['Fine', 'Rain', 'Snow', 'Fog'],
+            datasets: [{
+                data: [12000, 8000, 2000, 1000],
+                backgroundColor: ['#66bb6a', '#42a5f5', '#bdbdbd', '#9e9e9e']
+            }]
+        };
+
+        const distributionData = {
+            labels: ['Fatal', 'Serious', 'Slight'],
+            datasets: [{
+                label: 'Number of Accidents',
+                data: [1980, 6097, 15855],
+                backgroundColor: ['#ff5252', '#ffa726', '#66bb6a']
+            }]
+        };
+
+        // Create charts
+        new Chart(document.getElementById('severityChart'), {
+            type: 'doughnut',
+            data: severityData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('timeChart'), {
+            type: 'bar',
+            data: timeData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('weatherChart'), {
+            type: 'pie',
+            data: weatherChartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('distributionChart'), {
+            type: 'bar',
+            data: distributionData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        let userLocation = {};
+        let weatherData = {};
+
+        document.getElementById('getLocationBtn').onclick = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async function(position) {
+                    userLocation.lat = position.coords.latitude;
+                    userLocation.lon = position.coords.longitude;
+                    document.getElementById('locationInfo').innerHTML = 
+                        `Latitude: ${userLocation.lat}<br>Longitude: ${userLocation.lon}<br>Fetching weather...`;
+
+                    // Fetch weather from OpenWeatherMap
+                    const apiKey = '65743ebfe2b4edc83ba27239ff18a93f';
+                    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${userLocation.lat}&lon=${userLocation.lon}&appid=${apiKey}`;
+                    const response = await fetch(url);
+                    weatherData = await response.json();
+
+                    // Extract weather, light, and road info
+                    const weather = weatherData.weather[0].main;
+                    const isNight = (new Date().getHours() < 6 || new Date().getHours() > 18);
+                    const light = isNight ? "darkness light lit" : "daylight";
+                    const road = weather.toLowerCase().includes("rain") ? "wet" : "dry";
+
+                    document.getElementById('locationInfo').innerHTML += 
+                        `<br>Weather: ${weather}<br>Light: ${light}<br>Road: ${road}`;
+
+                    document.getElementById('sendSmsBtn').disabled = false;
+                }, function(error) {
+                    alert('Error fetching location: ' + error.message);
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        };
+
+        document.getElementById('sendSmsBtn').onclick = function() {
+            // Compose message
+            const severity = 1; // Example, replace with your logic
+            const message = `Alert\nFATAL accident expected in region\nLatitude: ${userLocation.lat} Longitude: ${userLocation.lon}\nweather: ${weatherData.weather[0].main}\nLight: ${light}\nRoadsc: ${road}\nplease take preventive measures from GOOGOLML.`;
+
+            // Send to backend for SMS sending
+            fetch('/send_sms', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: message})
+            })
+            .then(res => res.json())
+            .then(data => alert('SMS sent!'))
+            .catch(err => alert('Failed to send SMS'));
+        };
+    </script>
+</body>
+</html>

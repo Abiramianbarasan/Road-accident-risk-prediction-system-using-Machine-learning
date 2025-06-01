@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Accident Heatmap - Hotspots</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Leaflet.heat plugin -->
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        #map {
+            height: 80vh;
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Accident Hotspot Heatmap</h1>
+            <a href="/" class="back-link">← Back to Predictor</a>
+        </div>
+
+        <div id="map">Loading map...</div>
+    </div>
+
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([20.5937, 78.9629], 5); // India center
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Fetch and display heatmap data
+        fetch('/heatmap-data')
+            .then(response => {
+                if (!response.ok) throw new Error(`Status ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                if (!Array.isArray(data) || data.length === 0) {
+                    document.getElementById('map').innerHTML = 
+                        '<div style="text-align: center; padding: 20px;">No heatmap data available.</div>';
+                    return;
+                }
+
+                const heatPoints = data.map(p => [p.location.lat, p.location.lng, p.weight]);
+
+                L.heatLayer(heatPoints, {
+                    radius: 25,
+                    blur: 15,
+                    maxZoom: 12,
+                    max: 1.0,
+                    gradient: {
+                        0.4: 'blue',
+                        0.6: 'lime',
+                        0.8: 'orange',
+                        1.0: 'red'
+                    }
+                }).addTo(map);
+
+                // Auto fit bounds
+                const bounds = L.latLngBounds(heatPoints.map(p => [p[0], p[1]]));
+                map.fitBounds(bounds);
+            })
+            .catch(error => {
+                console.error('Heatmap error:', error);
+                document.getElementById('map').innerHTML = 
+                    `<div style="text-align: center; padding: 20px; color: red;">Error loading heatmap: ${error.message}</div>`;
+            });
+    </script>
+</body>
+</html>

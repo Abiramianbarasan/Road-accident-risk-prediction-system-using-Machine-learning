@@ -13,7 +13,7 @@ This project aims to predict and classify road accident severity using machine l
 - **Alert System**: SMS notification system
 
 ### 2.2 Technology Stack
-- **Programming Language**: Python 3.x
+- **Programming Language**: Python 3.6
 - **Web Framework**: Flask
 - **Machine Learning**: scikit-learn
 - **Data Processing**: pandas, numpy
